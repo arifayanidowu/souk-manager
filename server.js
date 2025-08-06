@@ -8,6 +8,13 @@ const dev = process.env.NODE_ENV !== "production";
 const hostname = process.env.HOSTNAME || "localhost";
 const port = process.env.PORT || 3000;
 
+console.log("Environment variables:");
+console.log("NODE_ENV:", process.env.NODE_ENV);
+console.log("PORT:", process.env.PORT);
+console.log("HOSTNAME:", process.env.HOSTNAME);
+console.log("PUBLIC_URL:", process.env.PUBLIC_URL);
+console.log("NEXT_PUBLIC_SOCKET_URL:", process.env.NEXT_PUBLIC_SOCKET_URL);
+
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
@@ -62,12 +69,32 @@ app.prepare().then(() => {
   const server = createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url, true);
+
+      // Health check endpoint
+      if (parsedUrl.pathname === "/health") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            status: "ok",
+            timestamp: new Date().toISOString(),
+            port: port,
+            environment: process.env.NODE_ENV,
+          })
+        );
+        return;
+      }
+
       await handle(req, res, parsedUrl);
     } catch (err) {
       console.error("Error occurred handling", req.url, err);
       res.statusCode = 500;
       res.end("internal server error");
     }
+  });
+
+  // Add error handling for the server
+  server.on("error", (err) => {
+    console.error("Server error:", err);
   });
 
   const io = new Server(server, {
@@ -189,8 +216,8 @@ app.prepare().then(() => {
     }
   }, UPDATE_INTERVAL);
 
-  server.listen(port, () => {
-    console.log(`> Ready on http://${hostname}:${port}`);
+  server.listen(port, "0.0.0.0", () => {
+    console.log(`> Ready on http://0.0.0.0:${port}`);
     console.log(`WebSocket server running on port ${port}`);
     console.log(`Public URL: ${process.env.PUBLIC_URL || "Not set"}`);
     console.log(
