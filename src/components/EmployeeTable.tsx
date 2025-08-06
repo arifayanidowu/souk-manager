@@ -140,7 +140,7 @@ export default function EmployeeTable() {
     return () => {
       newSocket.close();
     };
-  }, []);
+  }, [currentPage]);
 
   const handleDeleteEmployee = (employeeId: string) => {
     const employee = employees.find((emp) => emp.id === employeeId);
