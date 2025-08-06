@@ -44,6 +44,7 @@ pnpm dev
 ```
 
 This starts a single server that handles:
+
 - Next.js frontend on port 3000
 - WebSocket server on the same port
 
@@ -90,6 +91,34 @@ souk-manager/
 - **WebSocket**: Socket.IO
 - **Data Generation**: Faker.js
 - **Build Tool**: Turbopack
+
+## Railway Deployment
+
+To deploy this application to Railway:
+
+### Environment Variables
+
+Set these environment variables in your Railway project:
+
+```bash
+# Your Railway app's public URL
+PUBLIC_URL=https://your-app-name.railway.app
+
+# WebSocket connection URL (same as PUBLIC_URL for Railway)
+NEXT_PUBLIC_SOCKET_URL=https://your-app-name.railway.app
+```
+
+### Railway Configuration
+
+1. **Build Command**: `pnpm build`
+2. **Start Command**: `pnpm start`
+3. **Node Version**: 18 or higher
+
+### Important Notes
+
+- Railway automatically sets `PORT` and `HOSTNAME` environment variables
+- The WebSocket server will run on the same port as your Next.js app
+- CORS is configured to accept connections from your Railway domain
 
 ## Development
 

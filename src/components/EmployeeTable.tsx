@@ -62,7 +62,9 @@ export default function EmployeeTable() {
   useEffect(() => {
     setIsClient(true);
 
-    const newSocket = io("http://localhost:3000");
+    const socketUrl =
+      process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000";
+    const newSocket = io(socketUrl);
 
     newSocket.on("connect", () => {
       console.log("Connected to WebSocket server");

@@ -5,8 +5,8 @@ const { Server } = require("socket.io");
 const { faker } = require("@faker-js/faker");
 
 const dev = process.env.NODE_ENV !== "production";
-const hostname = "localhost";
-const port = 3000;
+const hostname = process.env.HOSTNAME || "localhost";
+const port = process.env.PORT || 3000;
 
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
@@ -78,7 +78,9 @@ app.prepare().then(() => {
         "http://localhost:3002",
         "http://localhost:3003",
         "https://codesandbox.io",
-      ],
+        process.env.PUBLIC_URL,
+        process.env.NEXT_PUBLIC_SOCKET_URL,
+      ].filter(Boolean),
       methods: ["GET", "POST"],
     },
   });
@@ -190,6 +192,10 @@ app.prepare().then(() => {
   server.listen(port, () => {
     console.log(`> Ready on http://${hostname}:${port}`);
     console.log(`WebSocket server running on port ${port}`);
+    console.log(`Public URL: ${process.env.PUBLIC_URL || "Not set"}`);
+    console.log(
+      `Socket URL: ${process.env.NEXT_PUBLIC_SOCKET_URL || "Not set"}`
+    );
     console.log(`Maximum employees: ${MAX_EMPLOYEES}`);
     console.log(`Employees per page: ${EMPLOYEES_PER_PAGE}`);
     console.log(`Update interval: ${UPDATE_INTERVAL}ms`);
