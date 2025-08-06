@@ -12,7 +12,7 @@ A real-time employee directory that displays randomly generated employee data vi
 - **Delete functionality** - Remove employees from the table
 - **SSR-compatible** - Proper client-side rendering for Next.js
 - **Pagination** - Navigate through pages of employees
-- **Data limits** - Maximum 100 employees with 10 per page
+- **Data limits** - Maximum 20 employees with 10 per page
 
 ## Employee Data Structure
 
