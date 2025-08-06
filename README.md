@@ -62,7 +62,7 @@ pnpm start
 
 To use this in CodeSandbox:
 
-1. The WebSocket server is configured to accept connections from `https://codesandbox.io`
+1. The WebSocket server is configured to accept connections from `codesandbox`, you can check out the sandbox version of this demo ⃗ [Codesandbox](https://codesandbox.io/p/sandbox/7n9n3j?file=/index.html)
 2. The frontend will automatically connect to the WebSocket server
 3. You'll see real-time employee data updates every 5 seconds
 
@@ -92,59 +92,18 @@ souk-manager/
 - **Data Generation**: Faker.js
 - **Build Tool**: Turbopack
 
-## Railway Deployment
-
-To deploy this application to Railway:
-
-### Environment Variables
-
-Set these environment variables in your Railway project:
-
-```bash
-# Your Railway app's public URL
-PUBLIC_URL=https://your-app-name.railway.app
-
-# WebSocket connection URL (same as PUBLIC_URL for Railway)
-NEXT_PUBLIC_SOCKET_URL=https://your-app-name.railway.app
-```
-
-### Railway Configuration
-
-1. **Build Command**: `pnpm build` (or use `./railway-build.sh` for clean builds)
-2. **Start Command**: `pnpm start`
-3. **Node Version**: 18 or higher
-
-### Troubleshooting Railway Deployment
-
-If you encounter a 502 error:
-
-1. **Clean Build**: Delete the `.next` folder and rebuild
-
-   ```bash
-   rm -rf .next
-   pnpm build
-   ```
-
-2. **Check Logs**: Look for module errors in Railway logs
-3. **Verify Environment Variables**: Ensure all required variables are set
-4. **Test Health Endpoint**: Visit `/health` to verify server status
-
 ### Important Notes
-
-- Railway automatically sets `PORT` and `HOSTNAME` environment variables
-- The WebSocket server will run on the same port as your Next.js app
-- CORS is configured to accept connections from your Railway domain
 
 ## Development
 
-The application now uses a **unified Next.js architecture**:
+The application uses a **unified Next.js architecture**:
 
 1. **Custom Next.js Server** (`server.js`): Integrates both frontend and WebSocket functionality
 2. **Frontend** (`src/app/page.tsx`): Displays the data in a real-time table
 
 ### Configuration
 
-- **Maximum Employees**: 100 total employees
+- **Maximum Employees**: 20 total employees
 - **Employees per Page**: 10 employees
 - **Update Interval**: 5 seconds
 - **Pagination**: Navigate through pages with Previous/Next buttons
