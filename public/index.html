@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Souk Manager - Employee Directory</title>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+      }
+      .status-connected {
+        background-color: #10b981;
+      }
+      .status-disconnected {
+        background-color: #ef4444;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto p-6">
+      <div class="bg-white rounded-lg shadow-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h1
+            class="text-2xl font-bold text-gray-900 flex items-center justify-between"
+          >
+            <span>Employee Directory</span>
+            <div class="flex items-center gap-4">
+              <div class="flex items-center gap-2">
+                <button
+                  id="add5Btn"
+                  class="px-3 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-50"
+                  disabled
+                >
+                  Add 5 More
+                </button>
+                <button
+                  id="add10Btn"
+                  class="px-3 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-50"
+                  disabled
+                >
+                  Add 10 More
+                </button>
+              </div>
+              <div class="flex items-center gap-2">
+                <div
+                  id="statusIndicator"
+                  class="status-indicator status-disconnected"
+                ></div>
+                <span id="statusText" class="text-sm text-gray-500"
+                  >Disconnected</span
+                >
+              </div>
+            </div>
+          </h1>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Name
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Position
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Team
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Email
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Phone
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Status
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Notes
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[50px]"
+                >
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody
+              id="employeeTableBody"
+              class="bg-white divide-y divide-gray-200"
+            >
+              <tr>
+                <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                  Connecting to server...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div
+          id="pagination"
+          class="flex items-center justify-between mt-4 px-6 pb-4"
+          style="display: none"
+        >
+          <div class="text-sm text-gray-500">
+            Page <span id="currentPage">1</span> of
+            <span id="totalPages">1</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              id="prevButton"
+              class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              onclick="changePage(-1)"
+            >
+              ← Previous
+            </button>
+            <button
+              id="nextButton"
+              class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              onclick="changePage(1)"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const socket = io("http://localhost:3000");
+      const statusIndicator = document.getElementById("statusIndicator");
+      const statusText = document.getElementById("statusText");
+      const tableBody = document.getElementById("employeeTableBody");
+
+      let employees = [];
+      let currentPage = 1;
+      let totalPages = 1;
+      let totalEmployees = 0;
+      let isLoading = false;
+
+      socket.on("connect", () => {
+        console.log("Connected to WebSocket server");
+        statusIndicator.className = "status-indicator status-connected";
+        statusText.textContent = "Connected";
+        // Enable refresh buttons
+        document.getElementById("add5Btn").disabled = false;
+        document.getElementById("add10Btn").disabled = false;
+      });
+
+      socket.on("disconnect", () => {
+        console.log("Disconnected from WebSocket server");
+        statusIndicator.className = "status-indicator status-disconnected";
+        statusText.textContent = "Disconnected";
+        // Disable refresh buttons
+        document.getElementById("add5Btn").disabled = true;
+        document.getElementById("add10Btn").disabled = true;
+      });
+
+      socket.on("employeeData", (data) => {
+        console.log("Received initial employee data:", data);
+        employees = data.employees;
+        currentPage = data.page;
+        totalPages = data.totalPages;
+        totalEmployees = data.total;
+        renderEmployees();
+        updatePagination();
+      });
+
+      socket.on("pageData", (data) => {
+        console.log("Received page data:", data);
+        employees = data.employees;
+        currentPage = data.page;
+        totalPages = data.totalPages;
+        totalEmployees = data.total;
+        isLoading = false;
+        renderEmployees();
+        updatePagination();
+      });
+
+      socket.on("newEmployee", (data) => {
+        console.log("Received new employee:", data);
+        // Only add to current page if we're on the first page
+        if (currentPage === 1) {
+          employees = [data.employee, ...employees.slice(0, -1)];
+        }
+        totalEmployees = data.total;
+        totalPages = data.totalPages;
+        renderEmployees();
+        updatePagination();
+      });
+
+      function getEmploymentStatusColor(status) {
+        switch (status) {
+          case "Full-time":
+            return "bg-green-100 text-green-800";
+          case "Part-time":
+            return "bg-blue-100 text-blue-800";
+          case "Contract":
+            return "bg-yellow-100 text-yellow-800";
+          case "Intern":
+            return "bg-purple-100 text-purple-800";
+          default:
+            return "bg-gray-100 text-gray-800";
+        }
+      }
+
+      function deleteEmployee(employeeId) {
+        const employee = employees.find((emp) => emp.id === employeeId);
+        if (
+          employee &&
+          confirm(`Are you sure you want to delete ${employee.name}?`)
+        ) {
+          employees = employees.filter((emp) => emp.id !== employeeId);
+          renderEmployees();
+        }
+      }
+
+      function renderEmployees() {
+        if (employees.length === 0) {
+          tableBody.innerHTML = `
+             <tr>
+               <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                 ${
+                   statusText.textContent === "Connected"
+                     ? "No employees found"
+                     : "Connecting to server..."
+                 }
+               </td>
+             </tr>
+           `;
+          return;
+        }
+
+        tableBody.innerHTML = employees
+          .map(
+            (employee) => `
+                  <tr class="hover:bg-gray-50">
+                      <td class="px-6 py-4 whitespace-nowrap">
+                          <div>
+                              <div class="text-sm font-medium text-gray-900">${
+                                employee.name
+                              }</div>
+                              <div class="text-sm text-gray-500">${
+                                employee.birthday
+                              }</div>
+                          </div>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${
+                        employee.position
+                      }</td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              Team ${employee.team}
+                          </span>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 max-w-xs truncate">${
+                        employee.email
+                      }</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${
+                        employee.phoneNumber
+                      }</td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getEmploymentStatusColor(
+                            employee.employmentStatus
+                          )}">
+                              ${employee.employmentStatus}
+                          </span>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 max-w-xs truncate">${
+                        employee.notes
+                      }</td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                          <button 
+                            onclick="deleteEmployee('${employee.id}')"
+                            class="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 rounded flex items-center justify-center"
+                            title="Delete employee"
+                          >
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                          </button>
+                      </td>
+                  </tr>
+              `
+          )
+          .join("");
+      }
+
+      function changePage(direction) {
+        const newPage = currentPage + direction;
+        if (newPage >= 1 && newPage <= totalPages && !isLoading) {
+          isLoading = true;
+          socket.emit("requestPage", newPage);
+        }
+      }
+
+      function updatePagination() {
+        const pagination = document.getElementById("pagination");
+        const currentPageSpan = document.getElementById("currentPage");
+        const totalPagesSpan = document.getElementById("totalPages");
+        const prevButton = document.getElementById("prevButton");
+        const nextButton = document.getElementById("nextButton");
+
+        if (totalPages > 1) {
+          pagination.style.display = "flex";
+          currentPageSpan.textContent = currentPage;
+          totalPagesSpan.textContent = totalPages;
+
+          prevButton.disabled = currentPage <= 1 || isLoading;
+          nextButton.disabled = currentPage >= totalPages || isLoading;
+        } else {
+          pagination.style.display = "none";
+        }
+      }
+
+      // Add refresh functionality
+      function addEmployees(count) {
+        if (socket && socket.connected) {
+          socket.emit("addEmployees", count);
+        }
+      }
+
+      // Add event listeners for refresh buttons
+      document.getElementById("add5Btn").addEventListener("click", () => addEmployees(5));
+      document.getElementById("add10Btn").addEventListener("click", () => addEmployees(10));
+
+      // Listen for employees added event
+      socket.on("employeesAdded", (data) => {
+        console.log("Employees added:", data);
+        if (data.added > 0) {
+          // Refresh current page data
+          socket.emit("requestPage", currentPage);
+          totalEmployees = data.total;
+          totalPages = data.totalPages;
+          
+          // Update button states
+          const add5Btn = document.getElementById("add5Btn");
+          const add10Btn = document.getElementById("add10Btn");
+          add5Btn.disabled = totalEmployees >= 20;
+          add10Btn.disabled = totalEmployees >= 20;
+        }
+      });
+    </script>
+  </body>
+</html>
