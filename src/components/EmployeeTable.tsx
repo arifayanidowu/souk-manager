@@ -1,4 +1,11 @@
 "use client";
+
+import {
+  ChevronLeft,
+  ChevronRight,
+  MoreHorizontal,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 
@@ -12,33 +19,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui";
+
 import { useBreakpoints } from "@/hooks/useMediaQuery";
 import { getEmploymentStatusColor } from "@/lib/utils";
-import { Employee } from "@/types/employee";
-import {
-  ChevronLeft,
-  ChevronRight,
-  MoreHorizontal,
-  Trash2,
-} from "lucide-react";
+import type { Employee } from "@/types/employee";
 
 interface PaginationData {
   employees: Employee[];
@@ -62,15 +63,10 @@ export default function EmployeeTable() {
   useEffect(() => {
     setIsClient(true);
 
-    // In production, connect to the same domain as the app
     const socketUrl =
       process.env.NODE_ENV === "production"
         ? window.location.origin
         : process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000";
-
-    console.log("Connecting to WebSocket at:", socketUrl);
-    console.log("Current window.location.origin:", window.location.origin);
-    console.log("NODE_ENV:", process.env.NODE_ENV);
 
     const newSocket = io(socketUrl);
 
@@ -118,24 +114,18 @@ export default function EmployeeTable() {
         totalPages: number;
         message: string;
       }) => {
-        console.log("Employees added event received:", data);
-
-        // Always update the total count, regardless of whether employees were added
         setTotalEmployees(data.total);
         setTotalPages(data.totalPages);
 
         if (data.added > 0) {
-          // Always refresh the current page to show new data
           newSocket.emit("requestPage", currentPage);
         } else {
-          // If no employees were added (e.g., max limit reached),
-          // still refresh to ensure we have the latest data
           newSocket.emit("requestPage", currentPage);
         }
       }
     );
 
-    // Listen for sync event to ensure correct count
+    // => Listen for sync event to ensure correct count
     newSocket.on(
       "syncEmployeeCount",
       (data: { total: number; totalPages: number }) => {
@@ -161,13 +151,12 @@ export default function EmployeeTable() {
   };
 
   const handleAddEmployees = (count: number = 5) => {
-    console.log("handleAddEmployees called with count:", count);
-    if (socket) {
-      console.log("Emitting addEmployees event");
-      socket.emit("addEmployees", count);
-    } else {
+    if (!socket) {
       console.log("Socket is null, cannot emit event");
+      return;
     }
+
+    socket.emit("addEmployees", count);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -213,7 +202,6 @@ export default function EmployeeTable() {
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
                     onClick={() => {
-                      console.log("Add 5 More button clicked");
                       handleAddEmployees(5);
                     }}
                     disabled={!isConnected || totalEmployees >= 20}
@@ -222,7 +210,6 @@ export default function EmployeeTable() {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
-                      console.log("Add 10 More button clicked");
                       handleAddEmployees(10);
                     }}
                     disabled={!isConnected || totalEmployees >= 20}
@@ -249,8 +236,8 @@ export default function EmployeeTable() {
                   <Button
                     variant="outline"
                     size="sm"
+                    className="cursor-pointer disabled:cursor-not-allowed"
                     onClick={() => {
-                      console.log("Add 5 More button clicked");
                       handleAddEmployees(5);
                     }}
                     disabled={!isConnected || totalEmployees >= 20}
@@ -260,8 +247,8 @@ export default function EmployeeTable() {
                   <Button
                     variant="outline"
                     size="sm"
+                    className="cursor-pointer disabled:cursor-not-allowed"
                     onClick={() => {
-                      console.log("Add 10 More button clicked");
                       handleAddEmployees(10);
                     }}
                     disabled={!isConnected || totalEmployees >= 20}

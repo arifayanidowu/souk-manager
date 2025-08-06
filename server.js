@@ -110,9 +110,6 @@ app.prepare().then(() => {
           process.env.NEXT_PUBLIC_SOCKET_URL,
         ].filter(Boolean);
 
-  console.log("CORS origins:", corsOrigins);
-  console.log("NODE_ENV:", process.env.NODE_ENV);
-
   const io = new Server(server, {
     cors: {
       origin: corsOrigins,
@@ -201,14 +198,12 @@ app.prepare().then(() => {
     });
   });
 
-  // Generate new employees periodically
   setInterval(() => {
     if (connectedClients > 0 && allEmployees.length < MAX_EMPLOYEES) {
       const newEmployee = generateEmployeeData();
       allEmployees.unshift(newEmployee);
       employeeCounter++;
 
-      // Broadcast new employee to all clients
       io.emit("newEmployee", {
         employee: newEmployee,
         total: allEmployees.length,
