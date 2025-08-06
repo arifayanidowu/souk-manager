@@ -110,9 +110,24 @@ NEXT_PUBLIC_SOCKET_URL=https://your-app-name.railway.app
 
 ### Railway Configuration
 
-1. **Build Command**: `pnpm build`
+1. **Build Command**: `pnpm build` (or use `./railway-build.sh` for clean builds)
 2. **Start Command**: `pnpm start`
 3. **Node Version**: 18 or higher
+
+### Troubleshooting Railway Deployment
+
+If you encounter a 502 error:
+
+1. **Clean Build**: Delete the `.next` folder and rebuild
+
+   ```bash
+   rm -rf .next
+   pnpm build
+   ```
+
+2. **Check Logs**: Look for module errors in Railway logs
+3. **Verify Environment Variables**: Ensure all required variables are set
+4. **Test Health Endpoint**: Visit `/health` to verify server status
 
 ### Important Notes
 

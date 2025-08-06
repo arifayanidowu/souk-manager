@@ -97,18 +97,27 @@ app.prepare().then(() => {
     console.error("Server error:", err);
   });
 
+  const corsOrigins =
+    process.env.NODE_ENV === "production"
+      ? true // Allow all origins in production
+      : [
+          "http://localhost:3000",
+          "http://localhost:3001",
+          "http://localhost:3002",
+          "http://localhost:3003",
+          "https://codesandbox.io",
+          process.env.PUBLIC_URL,
+          process.env.NEXT_PUBLIC_SOCKET_URL,
+        ].filter(Boolean);
+
+  console.log("CORS origins:", corsOrigins);
+  console.log("NODE_ENV:", process.env.NODE_ENV);
+
   const io = new Server(server, {
     cors: {
-      origin: [
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:3002",
-        "http://localhost:3003",
-        "https://codesandbox.io",
-        process.env.PUBLIC_URL,
-        process.env.NEXT_PUBLIC_SOCKET_URL,
-      ].filter(Boolean),
+      origin: corsOrigins,
       methods: ["GET", "POST"],
+      credentials: true,
     },
   });
 

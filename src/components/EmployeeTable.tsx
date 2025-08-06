@@ -62,8 +62,16 @@ export default function EmployeeTable() {
   useEffect(() => {
     setIsClient(true);
 
+    // In production, connect to the same domain as the app
     const socketUrl =
-      process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000";
+      process.env.NODE_ENV === "production"
+        ? window.location.origin
+        : process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000";
+
+    console.log("Connecting to WebSocket at:", socketUrl);
+    console.log("Current window.location.origin:", window.location.origin);
+    console.log("NODE_ENV:", process.env.NODE_ENV);
+
     const newSocket = io(socketUrl);
 
     newSocket.on("connect", () => {
