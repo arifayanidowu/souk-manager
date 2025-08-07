@@ -8,13 +8,6 @@ const dev = process.env.NODE_ENV !== "production";
 const hostname = process.env.HOSTNAME || "localhost";
 const port = process.env.PORT || 3000;
 
-console.log("Environment variables:");
-console.log("NODE_ENV:", process.env.NODE_ENV);
-console.log("PORT:", process.env.PORT);
-console.log("HOSTNAME:", process.env.HOSTNAME);
-console.log("PUBLIC_URL:", process.env.PUBLIC_URL);
-console.log("NEXT_PUBLIC_SOCKET_URL:", process.env.NEXT_PUBLIC_SOCKET_URL);
-
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
