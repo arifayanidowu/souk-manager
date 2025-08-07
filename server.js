@@ -54,9 +54,21 @@ function generateEmployeeData() {
   };
 }
 
-for (let i = 0; i < 10; i++) {
-  allEmployees.push(generateEmployeeData());
-}
+allEmployees = [];
+console.log("Generating initial employees...");
+
+const generateInitialEmployees = async () => {
+  for (let i = 0; i < 10; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const employee = generateEmployeeData();
+    allEmployees.push(employee);
+    console.log(
+      `Generated employee ${i + 1}: ${employee.name} - ${employee.email}`
+    );
+  }
+};
+
+generateInitialEmployees();
 
 app.prepare().then(() => {
   const server = createServer(async (req, res) => {
@@ -182,6 +194,27 @@ app.prepare().then(() => {
           message: "Maximum employee limit reached",
         });
         console.log("Maximum employee limit reached");
+      }
+    });
+
+    // Handle delete employee request
+    socket.on("deleteEmployee", (employeeId) => {
+      console.log("deleteEmployee event received for ID:", employeeId);
+
+      const initialCount = allEmployees.length;
+      allEmployees = allEmployees.filter((emp) => emp.id !== employeeId);
+      const deletedCount = initialCount - allEmployees.length;
+
+      if (deletedCount > 0) {
+        // Broadcast updated data to all clients
+        io.emit("employeeDeleted", {
+          employeeId: employeeId,
+          total: allEmployees.length,
+          totalPages: Math.ceil(allEmployees.length / EMPLOYEES_PER_PAGE),
+          message: `Deleted employee`,
+        });
+      } else {
+        console.log(`Employee with ID ${employeeId} not found`);
       }
     });
 

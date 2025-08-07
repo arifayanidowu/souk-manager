@@ -59,14 +59,15 @@ export default function EmployeeTable() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalEmployees, setTotalEmployees] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     setIsClient(true);
 
     const socketUrl =
       process.env.NODE_ENV === "production"
-        ? window.location.origin
-        : process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000";
+        ? window.location.origin || process.env.NEXT_PUBLIC_SOCKET_URL
+        : "http://localhost:3000";
 
     const newSocket = io(socketUrl);
 
@@ -85,6 +86,7 @@ export default function EmployeeTable() {
       setCurrentPage(data.page);
       setTotalPages(data.totalPages);
       setTotalEmployees(data.total);
+      setRefreshKey((prev) => prev + 1);
     });
 
     newSocket.on("pageData", (data: PaginationData) => {
@@ -93,6 +95,7 @@ export default function EmployeeTable() {
       setTotalPages(data.totalPages);
       setTotalEmployees(data.total);
       setIsLoading(false);
+      setRefreshKey((prev) => prev + 1);
     });
 
     newSocket.on(
@@ -135,6 +138,25 @@ export default function EmployeeTable() {
       }
     );
 
+    // ==> employee deletion confirmation
+    newSocket.on(
+      "employeeDeleted",
+      (data: {
+        employeeId: string;
+        total: number;
+        totalPages: number;
+        message: string;
+      }) => {
+        console.log("Employee deleted:", data);
+        setEmployees((prev) =>
+          prev.filter((emp) => emp.id !== data.employeeId)
+        );
+        setTotalEmployees(data.total);
+        setTotalPages(data.totalPages);
+        setRefreshKey((prev) => prev + 1);
+      }
+    );
+
     setSocket(newSocket);
 
     return () => {
@@ -144,18 +166,17 @@ export default function EmployeeTable() {
 
   const handleDeleteEmployee = (employeeId: string) => {
     const employee = employees.find((emp) => emp.id === employeeId);
-    if (employee) {
-      setEmployees((prev) => prev.filter((emp) => emp.id !== employeeId));
-      setTotalEmployees((prev) => prev - 1);
+    if (employee && socket) {
+      socket.emit("deleteEmployee", employeeId);
+    } else {
+      console.log("Cannot delete employee - socket or employee not found");
     }
   };
 
   const handleAddEmployees = (count: number = 5) => {
     if (!socket) {
-      console.log("Socket is null, cannot emit event");
       return;
     }
-
     socket.emit("addEmployees", count);
   };
 
@@ -184,7 +205,10 @@ export default function EmployeeTable() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div
+      className="container mx-auto p-6"
+      key={`employees-${employees.length}-${refreshKey}`}
+    >
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -215,6 +239,18 @@ export default function EmployeeTable() {
                     disabled={!isConnected || totalEmployees >= 20}
                   >
                     Add 10 More
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (socket) {
+                        console.log("Forcing refresh...");
+                        setRefreshKey((prev) => prev + 1);
+                        socket.emit("requestPage", currentPage);
+                      }
+                    }}
+                    disabled={!isConnected}
+                  >
+                    Refresh
                   </DropdownMenuItem>
                   <DropdownMenuItem disabled>
                     <div className="flex items-center gap-2">
@@ -254,6 +290,20 @@ export default function EmployeeTable() {
                     disabled={!isConnected || totalEmployees >= 20}
                   >
                     Add 10 More
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (socket) {
+                        console.log("Forcing refresh...");
+                        setRefreshKey((prev) => prev + 1);
+                        socket.emit("requestPage", currentPage);
+                      }
+                    }}
+                    disabled={!isConnected}
+                  >
+                    Refresh
                   </Button>
                 </div>
                 <div className="flex items-center gap-1">
@@ -307,8 +357,8 @@ export default function EmployeeTable() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  (employees || []).map((employee) => (
-                    <TableRow key={employee.id}>
+                  (employees || []).map((employee, index) => (
+                    <TableRow key={`${employee.id}-${index}`}>
                       <TableCell className="font-medium">
                         <div>
                           <div>{employee.name}</div>
